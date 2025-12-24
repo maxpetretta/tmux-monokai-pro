@@ -45,6 +45,7 @@ main()
   blue='#78dce8'
   magenta='#fc9867'
   cyan='#ab9df2'
+  active_window_bg='#5B595C'
 
   # Handle left icon configuration
   case $show_left_icon in
@@ -300,9 +301,9 @@ main()
 
   # Window option
   if $show_powerline; then
-    tmux set-window-option -g window-status-current-format "#[bg=${gray},fg=${dark_gray}]${left_sep} #[fg=${white},bg=${gray}]#I #W${current_flags} #[bg=${dark_gray},fg=${gray}]${left_sep}"
+    tmux set-window-option -g window-status-current-format "#[bg=${active_window_bg},fg=${dark_gray}]${left_sep} #[fg=${white},bg=${active_window_bg}]#I #W${current_flags} #[bg=${dark_gray},fg=${active_window_bg}]${left_sep}"
   else
-    tmux set-window-option -g window-status-current-format "#[fg=${white},bg=${gray}] #I #W${current_flags} "
+    tmux set-window-option -g window-status-current-format "#[fg=${white},bg=${active_window_bg}] #I #W${current_flags} "
   fi
 
   tmux set-window-option -g window-status-format "#[bg=${dark_gray},fg=${dark_gray}]${left_sep} #[fg=${white},bg=${dark_gray}]#I #W${flags} #[bg=${dark_gray},fg=${dark_gray}]${left_sep}"

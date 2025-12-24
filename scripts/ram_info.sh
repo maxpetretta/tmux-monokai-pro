@@ -77,11 +77,66 @@ $(vmstat -s | grep "pages zeroed$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
   esac
 }
 
+get_percent()
+{
+  case $(uname -s) in
+    Linux)
+      percent=$(free | awk 'NR==2 {printf "%.0f", $3/$2*100}')
+      echo "${percent}%"
+      ;;
+
+    Darwin)
+      # Get used memory blocks with vm_stat, multiply by page size to get size in bytes
+      used_mem=$(vm_stat | grep ' active\|wired ' | sed 's/[^0-9]//g' | paste -sd ' ' - | awk -v pagesize=$(pagesize) '{printf "%d\n", ($1+$2) * pagesize / 1048576}')
+      total_mem=$(sysctl -n hw.memsize | awk '{print $0/1024/1024}')
+      percent=$(awk -v used="$used_mem" -v total="$total_mem" 'BEGIN {printf "%.0f", used/total*100}')
+      echo "${percent}%"
+      ;;
+
+    FreeBSD)
+      hw_pagesize="$(sysctl -n hw.pagesize)"
+      mem_inactive="$(($(sysctl -n vm.stats.vm.v_inactive_count) * hw_pagesize))"
+      mem_unused="$(($(sysctl -n vm.stats.vm.v_free_count) * hw_pagesize))"
+      mem_cache="$(($(sysctl -n vm.stats.vm.v_cache_count) * hw_pagesize))"
+
+      free_mem=$(((mem_inactive + mem_unused + mem_cache) / 1024 / 1024))
+      total_mem=$(($(sysctl -n hw.physmem) / 1024 / 1024))
+      used_mem=$((total_mem - free_mem))
+      percent=$(awk -v used="$used_mem" -v total="$total_mem" 'BEGIN {printf "%.0f", used/total*100}')
+      echo "${percent}%"
+      ;;
+
+    OpenBSD)
+      hw_pagesize="$(pagesize)"
+      used_mem=$(( (
+$(vmstat -s | grep "pages active$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
+$(vmstat -s | grep "pages inactive$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
+$(vmstat -s | grep "pages wired$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
+$(vmstat -s | grep "pages zeroed$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
+0) * hw_pagesize / 1024 / 1024 ))
+      total_mem=$(($(sysctl -n hw.physmem) / 1024 / 1024))
+      percent=$(awk -v used="$used_mem" -v total="$total_mem" 'BEGIN {printf "%.0f", used/total*100}')
+      echo "${percent}%"
+      ;;
+
+    CYGWIN*|MINGW32*|MSYS*|MINGW*)
+      # TODO - windows compatability
+      ;;
+  esac
+}
+
 main()
 {
   ram_label=$(get_tmux_option "@monokai-ram-usage-label" "RAM")
-  ram_ratio=$(get_ratio)
-  echo "$ram_label $ram_ratio"
+  show_ram_percent=$(get_tmux_option "@monokai-ram-usage-percent" false)
+
+  if $show_ram_percent; then
+    ram_info=$(get_percent)
+  else
+    ram_info=$(get_ratio)
+  fi
+
+  echo "$ram_label $ram_info"
 }
 
 #run main driver
