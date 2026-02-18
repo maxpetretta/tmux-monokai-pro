@@ -9,16 +9,14 @@ get_ratio()
 {
   case $(uname -s) in
     Linux)
-      usage="$(free -h | awk 'NR==2 {print $3}')"
-      total="$(free -h | awk 'NR==2 {print $2}')"
-      formated="${usage}/${total}"
+      formated="$(free -h | awk 'NR==2 {printf "%s/%s", $3, $2}')"
 
       echo "${formated//i/B}"
       ;;
 
     Darwin)
       # Get used memory blocks with vm_stat, multiply by page size to get size in bytes, then convert to MiB
-      used_mem=$(vm_stat | grep ' active\|wired ' | sed 's/[^0-9]//g' | paste -sd ' ' - | awk -v pagesize=$(pagesize) '{printf "%d\n", ($1+$2) * pagesize / 1048576}')
+      used_mem=$(vm_stat | awk -v pagesize=$(pagesize) '/ active|wired / {gsub(/[^0-9]/,"",$0); sum+=$0} END {printf "%d\n", sum * pagesize / 1048576}')
       # System Profiler performs an activation lock check, which can result in
       # time outs or a lagged response. (~10 seconds)
       # total_mem=$(system_profiler SPHardwareDataType | grep "Memory:" | awk '{print $2 $3}')
@@ -54,12 +52,7 @@ get_ratio()
       # vmstat -s | grep "pages managed" | sed -ne 's/^ *\([0-9]*\).*$/\1/p'
       # Looked at the code from neofetch
       hw_pagesize="$(pagesize)"
-      used_mem=$(( (
-$(vmstat -s | grep "pages active$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-$(vmstat -s | grep "pages inactive$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-$(vmstat -s | grep "pages wired$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-$(vmstat -s | grep "pages zeroed$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-0) * hw_pagesize / 1024 / 1024 ))
+      used_mem=$(( $(vmstat -s | awk '/pages (active|inactive|wired|zeroed)$/{sum+=$1} END{print sum}') * hw_pagesize / 1024 / 1024 ))
       total_mem=$(($(sysctl -n hw.physmem) / 1024 / 1024))
       #used_mem=$((total_mem - free_mem))
       total_mem=$(($total_mem/1024))
@@ -87,7 +80,7 @@ get_percent()
 
     Darwin)
       # Get used memory blocks with vm_stat, multiply by page size to get size in bytes
-      used_mem=$(vm_stat | grep ' active\|wired ' | sed 's/[^0-9]//g' | paste -sd ' ' - | awk -v pagesize=$(pagesize) '{printf "%d\n", ($1+$2) * pagesize / 1048576}')
+      used_mem=$(vm_stat | awk -v pagesize=$(pagesize) '/ active|wired / {gsub(/[^0-9]/,"",$0); sum+=$0} END {printf "%d\n", sum * pagesize / 1048576}')
       total_mem=$(sysctl -n hw.memsize | awk '{print $0/1024/1024}')
       percent=$(awk -v used="$used_mem" -v total="$total_mem" 'BEGIN {printf "%.0f", used/total*100}')
       echo "${percent}%"
@@ -108,12 +101,7 @@ get_percent()
 
     OpenBSD)
       hw_pagesize="$(pagesize)"
-      used_mem=$(( (
-$(vmstat -s | grep "pages active$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-$(vmstat -s | grep "pages inactive$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-$(vmstat -s | grep "pages wired$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-$(vmstat -s | grep "pages zeroed$" | sed -ne 's/^ *\([0-9]*\).*$/\1/p') +
-0) * hw_pagesize / 1024 / 1024 ))
+      used_mem=$(( $(vmstat -s | awk '/pages (active|inactive|wired|zeroed)$/{sum+=$1} END{print sum}') * hw_pagesize / 1024 / 1024 ))
       total_mem=$(($(sysctl -n hw.physmem) / 1024 / 1024))
       percent=$(awk -v used="$used_mem" -v total="$total_mem" 'BEGIN {printf "%.0f", used/total*100}')
       echo "${percent}%"

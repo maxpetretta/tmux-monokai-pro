@@ -118,8 +118,8 @@ getRemoteInfo()
 
     if [ -n "$remote" ]; then
         out="...$remote"
-        ahead=$(echo "$base" | grep -E -o 'ahead[ [:digit:]]+' | cut -d" " -f2)
-        behind=$(echo "$base" | grep -E -o 'behind[ [:digit:]]+' | cut -d" " -f2)
+        ahead=$(echo "$base" | awk '{for(i=1;i<=NF;i++) if($i~/ahead/){v=$(i+1); gsub(/[^0-9]/,"",v); print v}}')
+        behind=$(echo "$base" | awk '{for(i=1;i<=NF;i++) if($i~/behind/){v=$(i+1); gsub(/[^0-9]/,"",v); print v}}')
 
         [ -n "$ahead" ] && out+=" +$ahead"
         [ -n "$behind" ] && out+=" -$behind"

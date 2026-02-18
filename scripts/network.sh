@@ -18,8 +18,8 @@ get_ssid()
       ;;
 
     Darwin)
-      if networksetup -getairportnetwork en0 | cut -d ':' -f 2 | sed 's/^[[:blank:]]*//g' &> /dev/null; then
-        echo "$(networksetup -getairportnetwork en0 | cut -d ':' -f 2)" | sed 's/^[[:blank:]]*//g'
+      if networksetup -getairportnetwork en0 | awk -F: '{gsub(/^[[:blank:]]*/,"",$2); print $2}' &> /dev/null; then
+        networksetup -getairportnetwork en0 | awk -F: '{gsub(/^[[:blank:]]*/,"",$2); print $2}'
       else
         echo 'Ethernet'
       fi

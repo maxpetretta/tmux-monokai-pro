@@ -9,7 +9,7 @@ get_percent()
 {
   case $(uname -s) in
     Linux)
-      percent=$(LC_NUMERIC=en_US.UTF-8 top -bn2 -d 0.01 | grep "Cpu(s)" | tail -1 | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
+      percent=$(LC_NUMERIC=en_US.UTF-8 top -bn2 -d 0.01 | awk -F, '/Cpu\(s\)/{for(i=1;i<=NF;i++) if($i~/id/){idle=$i}} END{gsub(/[^0-9.]/,"",idle); printf "%.1f%%\n", 100-idle}')
       normalize_percent_len $percent
       ;;
 
@@ -38,7 +38,7 @@ get_percent()
 get_load() {
   case $(uname -s) in
   Linux | Darwin | OpenBSD)
-    loadavg=$(uptime | awk -F'[a-z]:' '{ print $2}' | sed 's/,//g')
+    loadavg=$(uptime | awk -F'[a-z]:' '{gsub(/,/,"",$2); print $2}')
     echo $loadavg
     ;;
 
