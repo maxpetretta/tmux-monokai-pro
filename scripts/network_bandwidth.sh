@@ -48,7 +48,7 @@ interface_bytes() {
     ;;
   Darwin)
     # column 7 is Ibytes (in bytes, rx, download) and column 10 is Obytes (out bytes, tx, upload)
-    netstat -nbI "$1" | tail -n1 | awk '{print $10 " " $7}'
+    netstat -nbI "$1" | awk 'END{print $10 " " $7}'
     ;;
   esac
 }

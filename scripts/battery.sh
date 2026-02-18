@@ -24,10 +24,10 @@ linux_acpi() {
   else
     case "$arg" in
       status)
-        acpi | cut -d: -f2- | cut -d, -f1 | tr -d ' '
+        acpi | awk -F'[:,]' '{gsub(/ /,"",$2); print $2}'
         ;;
       percent)
-        acpi | cut -d: -f2- | cut -d, -f2 | tr -d '% '
+        acpi | awk -F'[:,]' '{gsub(/[% ]/,"",$3); print $3}'
         ;;
       *)
         ;;
@@ -49,7 +49,7 @@ battery_percent()
       ;;
 
     FreeBSD)
-      echo $(apm | sed '8,11d' | grep life | awk '{print $4}')
+      echo $(apm | awk 'NR>=8&&NR<=11{next} /life/{print $4}')
       ;;
 
     CYGWIN*|MINGW32*|MSYS*|MINGW*)
@@ -70,11 +70,11 @@ battery_status()
       ;;
 
     Darwin)
-      status=$(pmset -g batt | sed -n 2p | cut -d ';' -f 2 | tr -d " ")
+      status=$(pmset -g batt | awk -F';' 'NR==2 {gsub(/ /,"",$2); print $2}')
       ;;
 
     FreeBSD)
-      status=$(apm | sed '8,11d' | grep Status | awk '{printf $3}')
+      status=$(apm | awk 'NR>=8&&NR<=11{next} /Status/{printf $3}')
       ;;
 
     CYGWIN*|MINGW32*|MSYS*|MINGW*)

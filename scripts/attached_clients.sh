@@ -12,7 +12,7 @@ source $current_dir/utils.sh
 
 count_clients() {
   pane=$(tmux list-panes -F "#{session_name}" | head -n 1)
-  tmux list-clients -t $pane | wc -l | tr -d ' '
+  tmux list-clients -t $pane | awk 'END{print NR}'
 }
 
 main() {
